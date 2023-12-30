@@ -22,8 +22,8 @@ jobs:
         go-version: '1.21.3'
 
     - name: Build
-      run: go build -v -o gh-archive .
+      run: go build -v -o main .
       working-directory: ./gh-archive
 
     - name: Run
-      run: ./gh-archive -t "python" -n 21
+      run: ./gh-archive/main -t "python" -n 21
