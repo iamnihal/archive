@@ -20,6 +20,9 @@ jobs:
       uses: actions/setup-go@v4
       with:
         go-version: '1.20'
+  
+    - name: Initialize Go Module
+      run: go mod init github.com/iamnihal/gh-archive
 
     - name: Build
       run: go build -v -o binary/gh-archive ./gh-archive
