@@ -39,3 +39,17 @@ jobs:
       with:
         name: go-output
         path: ./gh-archive/output.txt
+
+  access-artifact:
+    needs: build
+    runs-on: ubuntu-latest
+    steps:
+    - name: Download Artifact
+      uses: actions/download-artifact@v2
+      with:
+        name: go-output
+        path: ./downloaded-artifact
+
+    - name: Print Contents
+      run: |
+        cat ./downloaded-artifact/output.txt
