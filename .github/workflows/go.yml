@@ -26,7 +26,7 @@ jobs:
       working-directory: ./gh-archive
 
     - name: Run
-      run: ./gh-archive/main -t "python" -n 21 -l output.txt
+      run: ./gh-archive/main -t "python" -n 21 -l ./gh-archive/output.txt
 
     - name: CWD
       run: pwd
