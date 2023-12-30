@@ -28,6 +28,12 @@ jobs:
     - name: Run
       run: ./gh-archive/main -t "python" -n 21 -l output.txt
 
+    - name: CWD
+      run: pwd
+      
+    - name: List files
+      run: ls -R ./gh-archive
+      
     - name: Save Output
       uses: actions/upload-artifact@v2
       with:
