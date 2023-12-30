@@ -23,6 +23,7 @@ jobs:
 
     - name: Build
       run: go build -v -o gh-archive .
+      working-directory: ./gh-archive
 
     - name: Run
       run: ./gh-archive -t "python" -n 21
