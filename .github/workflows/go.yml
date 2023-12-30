@@ -4,8 +4,11 @@
 name: Go
 
 on:
-  push:
-    branches: [ "main" ]
+  workflow_dispatch:
+    inputs:
+      language:
+        description: 'The programming language to use'
+        required: true
 
 jobs:
   build:
@@ -26,7 +29,7 @@ jobs:
       working-directory: ./gh-archive
 
     - name: Run
-      run: ./gh-archive/main -t "python" -n 21 -l ./gh-archive/output.txt
+      run: ./gh-archive/main -t "${{ github.event.inputs.language }}" -n 21 -l ./gh-archive/output.txt
 
     - name: CWD
       run: pwd
