@@ -2,12 +2,19 @@
 # For more information see: https://docs.github.com/en/actions/automating-builds-and-tests/building-and-testing-go
 
 name: Go
+run-name: "${{ github.event.inputs.run_id }}"
 
 on:
   workflow_dispatch:
     inputs:
       language:
         description: 'The programming language to use'
+        required: true
+      repo:
+        description: 'Number of repositories to check'
+        required: false
+      run_id:
+        description: 'Unique identifier for Workflow'
         required: true
 
 jobs:
@@ -29,13 +36,7 @@ jobs:
       working-directory: ./gh-archive
 
     - name: Run
-      run: ./gh-archive/main -t "${{ github.event.inputs.language }}" -n 21 -l ./gh-archive/output.txt
-
-    - name: CWD
-      run: pwd
-      
-    - name: List files
-      run: ls -R ./gh-archive
+      run: ./gh-archive/main -t "${{ github.event.inputs.language }}" -n "${{ github.event.inputs.repo }}" -o ./gh-archive/output.txt
       
     - name: Save Output
       uses: actions/upload-artifact@v2
