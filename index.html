@@ -1,0 +1,236 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@picocss/pico@1/css/pico.min.css">
+  <title>Find Archived GitHub Repositories</title>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.1.5/jszip.min.js"></script>
+</head>
+
+<body>
+  <main class="container">
+    <h1 style="text-align: center;">Find Archived GitHub Repositories</h1>
+    <form id="workflow-form">
+      <div class="grid">
+        <label for="language">
+          Enter Topic (E.g. Python, Go, JavaScript, AI, ML)
+          <input type="text" id="language" name="language" required>
+        </label>
+
+        <label for="repo">
+          Number Of Repositories To Check (default 100)
+          <input type="text" id="repo" name="repo">
+        </label>
+
+      </div>
+      <button type="submit">Submit</button>
+    </form>
+
+    <div id="output-container">
+      <h2>Workflow Status:</h2>
+      <div id="status-container"></div>
+      <pre id="output"></pre>
+    </div>
+
+    <script>
+
+      const headers = {
+        'Authorization': 'Bearer <TOKEN>', // Provide your GitHub Personal Access Token
+        'Content-Type': 'application/json',
+      };
+
+      document.getElementById('workflow-form').addEventListener('submit', function (event) {
+        event.preventDefault();
+        const language = document.getElementById('language').value;
+        const repo = document.getElementById('repo').value;
+        const repoValue = repo === '' ? "100" : repo;
+
+        resetContent()
+        triggerWorkflow(language, repoValue);
+      });
+
+      function updateStatus(status, color = 'green') {
+        const statusContainer = document.getElementById('status-container');
+        const statusElement = document.createElement('p');
+        statusElement.textContent = status;
+        statusElement.style.color = color;
+        statusElement.style.fontWeight = 'bold';
+        statusContainer.appendChild(statusElement);
+      }
+
+      function updateOutput(content) {
+        const outputContainer = document.getElementById('output');
+        outputContainer.textContent = content;
+      }
+
+      function resetContent() {
+        const statusContainer = document.getElementById('status-container');
+        statusContainer.innerHTML = '';
+
+        const outputContainer = document.getElementById('output');
+        outputContainer.innerHTML = '';
+      }
+
+
+      function triggerWorkflow(language, repo) {
+        const run_id = Date.now().toString();
+        let workflowRunId = null;
+
+        updateStatus('Triggering Dispatch event...');
+
+        fetch('https://api.github.com/repos/emnihal/archive/actions/workflows/go.yml/dispatches', {
+          method: 'POST',
+          headers: headers,
+          body: JSON.stringify({
+            ref: 'main',
+            inputs: { language: language, repo: repo, run_id: run_id },
+          }),
+        })
+          .then(response => {
+            if (!response.ok) {
+              updateStatus('Failed to trigger workflow!', 'red');
+            }
+
+            updateStatus('Workflow triggered successfully!');
+            return true;
+          })
+          .then(success => {
+            if (success) {
+              return new Promise(resolve => setTimeout(resolve, 5000));
+            }
+          })
+          .then(() => {
+            updateStatus('Fetching workflow runs...', 'blue');
+            return fetch('https://api.github.com/repos/emnihal/archive/actions/runs', {
+              headers: headers
+            });
+          })
+          .then(response => {
+            if (!response.ok) {
+              updateStatus('Failed to retrieve workflow runs!', 'red');
+            }
+            return response.json();
+          })
+          .then(data => {
+            const matchingRun = data.workflow_runs.find(run => run.name === run_id);
+
+            if (!matchingRun) {
+              updateStatus(`No matching workflow run found for name: ${run_id}!`, 'red');
+            } else {
+              updateStatus(`Workflow found with name: ${run_id}!`);
+              workflowRunId = matchingRun.id;
+
+              updateStatus("Waiting 30 seconds to complete the workflow...")
+              setTimeout(() => {
+                updateStatus("Fetching workflow status...")
+                checkWorkflowCompletion();
+              }, 40000);
+            }
+          })
+          .catch(error => {
+            updateStatus('Failed to trigger workflow or retrieve output!', 'red');
+          });
+
+        function checkWorkflowCompletion() {
+          const checkInterval = setInterval(() => {
+            fetch(`https://api.github.com/repos/emnihal/archive/actions/runs/${workflowRunId}`, {
+              headers: headers
+            })
+              .then(response => {
+                if (!response || !response.ok) {
+                  updateStatus('Failed to retrieve workflow status!', 'red');
+                }
+
+                return response.json();
+              })
+              .then(runData => {
+                if (runData.status === 'completed') {
+                  return fetch(`https://api.github.com/repos/emnihal/archive/actions/runs/${workflowRunId}/artifacts`, {
+                    headers: headers
+                  });
+                }
+              })
+              .then(response => {
+                if (!response.ok) {
+                  updateStatus('Failed to retrieve artifacts', 'red');
+                }
+
+                return response.json();
+              })
+              .then(data => {
+                const latestArtifact = data.artifacts[0];
+
+                if (!latestArtifact) {
+                  updateStatus('No artifacts found!', 'red');
+                }
+
+                updateStatus('Artifacts found!');
+
+                return fetch(latestArtifact.archive_download_url, {
+                  headers: headers
+                });
+              })
+              .then(response => {
+                if (!response.ok) {
+                  updateStatus('Failed to retrieve artifact content!', 'red');
+                }
+                updateStatus('Downloaded artifacts!');
+                return response.blob();
+              })
+              .then(zipBlob => {
+                return JSZip.loadAsync(zipBlob);
+              })
+              .then(zip => {
+                return zip.file('output.txt').async('string');
+              })
+              .then(content => {
+                const data = JSON.parse(content);
+
+                const formattedOutput = document.createElement('div');
+
+                if (Object.keys(data).length === 0) {
+                  const statusParagraph = document.createElement('p');
+                  statusParagraph.style.color = 'red';
+                  statusParagraph.textContent = 'Status: No artifacts found';
+                  formattedOutput.appendChild(statusParagraph);
+                  const outputContainer = document.getElementById('output');
+                  outputContainer.innerHTML = '';
+                  outputContainer.appendChild(formattedOutput);
+                  clearInterval(checkInterval);
+                  return;
+                } else {
+                  for (const [url, stars] of Object.entries(data)) {
+                    const hyperlink = document.createElement('a');
+                    hyperlink.href = url;
+                    hyperlink.textContent = `${url}: ${stars}`;
+
+                    const paragraph = document.createElement('p');
+                    paragraph.appendChild(hyperlink);
+
+                    formattedOutput.appendChild(paragraph);
+                  }
+
+                  const statusParagraph = document.createElement('p');
+                  statusParagraph.style.color = 'green';
+                  statusParagraph.textContent = 'Status: Artifacts retrieved successfully';
+                  formattedOutput.appendChild(statusParagraph);
+                }
+
+                const outputContainer = document.getElementById('output');
+                outputContainer.innerHTML = '';
+                outputContainer.appendChild(formattedOutput);
+                clearInterval(checkInterval);
+              })
+              .catch(error => {
+                updateStatus('Workflow is still in-progress. Retrying in 5 seconds...', 'orange');
+              });
+          }, 5000);
+        }
+      }
+    </script>
+  </main>
+</body>
+
+</html>
