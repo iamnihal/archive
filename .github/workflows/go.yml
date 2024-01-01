@@ -7,8 +7,8 @@ run-name: "${{ github.event.inputs.run_id }}"
 on:
   workflow_dispatch:
     inputs:
-      language:
-        description: 'The programming language to use'
+      topic:
+        description: 'Repository topic'
         required: true
       repo:
         description: 'Number of repositories to check'
@@ -36,7 +36,7 @@ jobs:
       working-directory: ./gh-archive
 
     - name: Run
-      run: ./gh-archive/main -t "${{ github.event.inputs.language }}" -n "${{ github.event.inputs.repo }}" -o ./gh-archive/output.txt
+      run: ./gh-archive/main -t "${{ github.event.inputs.topic }}" -n "${{ github.event.inputs.repo }}" -o ./gh-archive/output.txt
       
     - name: Save Output
       uses: actions/upload-artifact@v2

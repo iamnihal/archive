@@ -14,9 +14,9 @@
     <h1 style="text-align: center;">Find Archived GitHub Repositories</h1>
     <form id="workflow-form">
       <div class="grid">
-        <label for="language">
+        <label for="topic">
           Enter Topic (E.g. Python, Go, JavaScript, AI, ML)
-          <input type="text" id="language" name="language" required>
+          <input type="text" id="topic" name="topic" required>
         </label>
 
         <label for="repo">
@@ -43,12 +43,12 @@
 
       document.getElementById('workflow-form').addEventListener('submit', function (event) {
         event.preventDefault();
-        const language = document.getElementById('language').value;
+        const topic = document.getElementById('topic').value;
         const repo = document.getElementById('repo').value;
         const repoValue = repo === '' ? "100" : repo;
 
         resetContent()
-        triggerWorkflow(language, repoValue);
+        triggerWorkflow(topic, repoValue);
       });
 
       function updateStatus(status, color = 'green') {
@@ -74,7 +74,7 @@
       }
 
 
-      function triggerWorkflow(language, repo) {
+      function triggerWorkflow(topic, repo) {
         const run_id = Date.now().toString();
         let workflowRunId = null;
 
@@ -85,7 +85,7 @@
           headers: headers,
           body: JSON.stringify({
             ref: 'main',
-            inputs: { language: language, repo: repo, run_id: run_id },
+            inputs: { topic: topic, repo: repo, run_id: run_id },
           }),
         })
           .then(response => {
