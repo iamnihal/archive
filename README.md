@@ -1,2 +1,2 @@
-# archive
-Experiment
+# [gh-archive](https://github.com/iamnihal/gh-archive) but for web
+This repository demonstrates using GitHub Actions to serve a Go utility, ["gh-archive"](https://github.com/iamnihal/gh-archive), through a web interface. The primary goal is to provide users with an interactive web-based experience for running and accessing the output of the Go program. Detailed information is available in the [blog post](https://nihalchoudhary.in/posts/2023/12/utilizing-github-actions-to-serve-a-tool-via-web/).
